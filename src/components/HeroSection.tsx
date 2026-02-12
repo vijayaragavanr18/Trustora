@@ -1,17 +1,14 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { ShieldCheck, ArrowRight } from "lucide-react";
-import heroBg from "@/assets/hero-bg.jpg";
 
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden rounded-xl border border-border mb-8">
-      {/* Background image */}
+      {/* Gradient background instead of image */}
       <div className="absolute inset-0">
-        <img
-          src={heroBg}
-          alt=""
-          className="w-full h-full object-cover opacity-30"
-        />
+        <div className="w-full h-full bg-gradient-to-br from-primary/20 via-background to-background opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/60" />
       </div>
 
@@ -33,8 +30,8 @@ export function HeroSection() {
             <span className="text-gradient-primary">Protect Truth.</span>
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-lg">
-            Enterprise-grade media integrity analysis powered by advanced neural networks. 
-            Identify manipulated content before it causes damage.
+            Enterprise-grade media integrity analysis powered by advanced neural
+            networks. Identify manipulated content before it causes damage.
           </p>
           <div className="flex flex-wrap gap-3">
             <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity glow-primary">

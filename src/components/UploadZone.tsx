@@ -1,3 +1,5 @@
+"use client";
+
 import { Upload, FileImage, FileVideo } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useCallback } from "react";
@@ -47,7 +49,7 @@ export function UploadZone() {
             Upload Media for Analysis
           </h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Drag and drop images or videos to scan for deepfake manipulation, 
+            Drag and drop images or videos to scan for deepfake manipulation,
             AI-generated content, and forensic anomalies.
           </p>
         </div>

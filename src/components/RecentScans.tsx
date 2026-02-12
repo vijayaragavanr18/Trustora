@@ -1,13 +1,25 @@
-import { AlertTriangle, CheckCircle, Clock, FileSearch } from "lucide-react";
+"use client";
+
+import { AlertTriangle, CheckCircle, Clock, FileSearch, LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
-const recentScans = [
+interface Scan {
+  id: number;
+  filename: string;
+  type: string;
+  status: string;
+  level: "high" | "medium" | "low";
+  confidence: number;
+  timestamp: string;
+}
+
+const recentScans: Scan[] = [
   {
     id: 1,
     filename: "press_photo_042.jpg",
     type: "Image",
     status: "Threat Detected",
-    level: "high" as const,
+    level: "high",
     confidence: 94.2,
     timestamp: "2 min ago",
   },
@@ -16,7 +28,7 @@ const recentScans = [
     filename: "interview_clip.mp4",
     type: "Video",
     status: "Clean",
-    level: "low" as const,
+    level: "low",
     confidence: 99.1,
     timestamp: "8 min ago",
   },
@@ -25,7 +37,7 @@ const recentScans = [
     filename: "social_media_post.png",
     type: "Image",
     status: "Suspicious",
-    level: "medium" as const,
+    level: "medium",
     confidence: 67.8,
     timestamp: "15 min ago",
   },
@@ -34,7 +46,7 @@ const recentScans = [
     filename: "quarterly_report.jpg",
     type: "Image",
     status: "Clean",
-    level: "low" as const,
+    level: "low",
     confidence: 98.5,
     timestamp: "22 min ago",
   },
@@ -43,25 +55,25 @@ const recentScans = [
     filename: "video_statement.mp4",
     type: "Video",
     status: "Analyzing",
-    level: "medium" as const,
+    level: "medium",
     confidence: 0,
     timestamp: "Just now",
   },
 ];
 
-const levelColors = {
+const levelColors: Record<string, string> = {
   high: "text-threat-high",
   medium: "text-threat-medium",
   low: "text-threat-low",
 };
 
-const levelBg = {
+const levelBg: Record<string, string> = {
   high: "bg-threat-high/10",
   medium: "bg-threat-medium/10",
   low: "bg-threat-low/10",
 };
 
-const statusIcons = {
+const statusIcons: Record<string, LucideIcon> = {
   "Threat Detected": AlertTriangle,
   Clean: CheckCircle,
   Suspicious: FileSearch,
@@ -87,7 +99,7 @@ export function RecentScans() {
       </div>
       <div className="divide-y divide-border">
         {recentScans.map((scan) => {
-          const Icon = statusIcons[scan.status as keyof typeof statusIcons] || FileSearch;
+          const Icon = statusIcons[scan.status] || FileSearch;
           return (
             <div
               key={scan.id}

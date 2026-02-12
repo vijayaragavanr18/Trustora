@@ -5,7 +5,7 @@ import { UploadZone } from "@/components/UploadZone";
 import { RecentScans } from "@/components/RecentScans";
 import { ThreatMap } from "@/components/ThreatMap";
 
-const Index = () => {
+export default function Home() {
   return (
     <div className="min-h-screen bg-background bg-grid bg-radial-fade">
       <Navbar />
@@ -26,6 +26,4 @@ const Index = () => {
       </main>
     </div>
   );
-};
-
-export default Index;
+}
