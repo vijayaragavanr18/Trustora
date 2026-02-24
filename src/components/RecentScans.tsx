@@ -1,86 +1,81 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle, Clock, FileSearch, LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import { api } from "@/lib/api";
+import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from "next/navigation";
 
 interface Scan {
-  id: number;
-  filename: string;
-  type: string;
+  id: string;
+  file_name: string;
+  file_type: string;
   status: string;
-  level: "high" | "medium" | "low";
+  risk_level: string;
   confidence: number;
-  timestamp: string;
+  created_at: string;
+  deepfake_score?: number;
 }
 
-const recentScans: Scan[] = [
-  {
-    id: 1,
-    filename: "press_photo_042.jpg",
-    type: "Image",
-    status: "Threat Detected",
-    level: "high",
-    confidence: 94.2,
-    timestamp: "2 min ago",
-  },
-  {
-    id: 2,
-    filename: "interview_clip.mp4",
-    type: "Video",
-    status: "Clean",
-    level: "low",
-    confidence: 99.1,
-    timestamp: "8 min ago",
-  },
-  {
-    id: 3,
-    filename: "social_media_post.png",
-    type: "Image",
-    status: "Suspicious",
-    level: "medium",
-    confidence: 67.8,
-    timestamp: "15 min ago",
-  },
-  {
-    id: 4,
-    filename: "quarterly_report.jpg",
-    type: "Image",
-    status: "Clean",
-    level: "low",
-    confidence: 98.5,
-    timestamp: "22 min ago",
-  },
-  {
-    id: 5,
-    filename: "video_statement.mp4",
-    type: "Video",
-    status: "Analyzing",
-    level: "medium",
-    confidence: 0,
-    timestamp: "Just now",
-  },
-];
-
-const levelColors: Record<string, string> = {
-  high: "text-threat-high",
-  medium: "text-threat-medium",
-  low: "text-threat-low",
-};
-
-const levelBg: Record<string, string> = {
-  high: "bg-threat-high/10",
-  medium: "bg-threat-medium/10",
-  low: "bg-threat-low/10",
-};
-
-const statusIcons: Record<string, LucideIcon> = {
-  "Threat Detected": AlertTriangle,
-  Clean: CheckCircle,
-  Suspicious: FileSearch,
-  Analyzing: Clock,
-};
-
 export function RecentScans() {
+  const router = useRouter();
+  const [scans, setScans] = useState<Scan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        if (api.isAuthenticated()) {
+          const data = await api.getHistory();
+          setScans(data.slice(0, 5)); // Show only last 5
+        }
+      } catch (error) {
+        console.error("Failed to fetch history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+    // Poll every 5 seconds for live updates
+    const interval = setInterval(fetchHistory, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getStatusIcon = (status: string, risk: string): LucideIcon => {
+    if (status === 'pending' || status === 'processing') return Clock;
+    if (risk === 'high') return AlertTriangle;
+    if (risk === 'medium') return FileSearch;
+    return CheckCircle;
+  };
+
+  const getLevelColor = (risk: string) => {
+    switch (risk?.toLowerCase()) {
+      case 'high': return 'text-red-500';
+      case 'medium': return 'text-yellow-500';
+      case 'low': return 'text-green-500';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  const getLevelBg = (risk: string) => {
+    switch (risk?.toLowerCase()) {
+      case 'high': return 'bg-red-500/10';
+      case 'medium': return 'bg-yellow-500/10';
+      case 'low': return 'bg-green-500/10';
+      default: return 'bg-secondary';
+    }
+  };
+
+  if (loading && scans.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+        Loading recent scans...
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -92,49 +87,64 @@ export function RecentScans() {
         <h2 className="font-display text-lg font-semibold text-foreground">
           Recent Scans
         </h2>
-        <span className="text-xs font-mono text-muted-foreground">
+        <span className="text-xs font-mono text-muted-foreground flex items-center gap-2">
           LIVE FEED
-          <span className="inline-block ml-1.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse-glow" />
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         </span>
       </div>
-      <div className="divide-y divide-border">
-        {recentScans.map((scan) => {
-          const Icon = statusIcons[scan.status] || FileSearch;
-          return (
-            <div
-              key={scan.id}
-              className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/50 transition-colors"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`rounded p-1.5 ${levelBg[scan.level]}`}>
-                  <Icon className={`h-4 w-4 ${levelColors[scan.level]}`} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-mono text-foreground truncate">
-                    {scan.filename}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{scan.type}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6 text-right shrink-0">
-                <div>
-                  <p className={`text-xs font-semibold ${levelColors[scan.level]}`}>
-                    {scan.status}
-                  </p>
-                  {scan.confidence > 0 && (
-                    <p className="text-xs font-mono text-muted-foreground">
-                      {scan.confidence}% conf.
+      
+      {scans.length === 0 ? (
+        <div className="p-8 text-center text-muted-foreground text-sm">
+          No scans yet. Upload a file to see it here!
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {scans.map((scan) => {
+            const Icon = getStatusIcon(scan.status, scan.risk_level);
+            const riskColor = getLevelColor(scan.risk_level);
+            const riskBg = getLevelBg(scan.risk_level);
+            
+            return (
+              <div
+                key={scan.id}
+                className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/50 transition-colors"
+                onClick={() => router.push(`/analysis/${scan.id}`)}
+                onKeyDown={(e) => e.key === 'Enter' && router.push(`/analysis/${scan.id}`)}
+                role="button"
+                tabIndex={0}
+                aria-label={`View analysis for ${scan.file_name}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`rounded p-1.5 ${riskBg}`}>
+                    <Icon className={`h-4 w-4 ${riskColor}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-mono text-foreground truncate max-w-[150px]" title={scan.file_name}>
+                      {scan.file_name}
                     </p>
-                  )}
+                    <p className="text-xs text-muted-foreground capitalize">{scan.file_type}</p>
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground w-16 text-right">
-                  {scan.timestamp}
-                </span>
+                <div className="flex items-center gap-6 text-right shrink-0">
+                  <div>
+                    <p className={`text-xs font-semibold ${riskColor} capitalize`}>
+                      {scan.status === 'completed' ? (scan.risk_level || 'Safe') : scan.status}
+                    </p>
+                    {(scan.confidence !== undefined && scan.confidence !== null) ? (
+                      <p className="text-xs font-mono text-muted-foreground">
+                        {scan.confidence.toFixed(1)}% conf.
+                      </p>
+                    ) : null}
+                  </div>
+                  <span suppressHydrationWarning className="text-xs text-muted-foreground w-20 text-right">
+                    {formatDistanceToNow(new Date(scan.created_at), { addSuffix: true })}
+                  </span>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import "./globals.css";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Trustora AI — Deepfake Detection & Media Forensics",
-  description:
-    "Enterprise-grade media integrity analysis powered by advanced neural networks. Detect deepfakes and protect truth.",
-};
+import { ToastProvider } from "@/context/ToastContext";
+import "./globals.css";
 
 export default function RootLayout({
   children,
@@ -14,7 +10,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

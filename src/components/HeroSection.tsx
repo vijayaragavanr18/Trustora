@@ -34,13 +34,14 @@ export function HeroSection() {
             networks. Identify manipulated content before it causes damage.
           </p>
           <div className="flex flex-wrap gap-3">
-            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity glow-primary">
+            <button 
+              suppressHydrationWarning
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity glow-primary"
+            >
               Start Analysis
               <ArrowRight className="h-4 w-4" />
             </button>
-            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-semibold text-sm hover:bg-secondary transition-colors">
-              View Demo
-            </button>
+
           </div>
         </motion.div>
       </div>

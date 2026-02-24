@@ -1,67 +1,190 @@
 "use client";
 
-import { Upload, FileImage, FileVideo } from "lucide-react";
-import { motion } from "framer-motion";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload, File, X } from 'lucide-react';
+import { Button } from './ui/Button';
+import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+import axios from 'axios';
 
-export function UploadZone() {
-  const [isDragging, setIsDragging] = useState(false);
+interface UploadZoneProps {
+  onUpload?: (file: File) => void;
+  acceptedTypes?: string[];
+  maxSize?: number; // in MB
+}
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
+export function UploadZone({ 
+  onUpload, 
+  acceptedTypes = ['image/*', 'video/*'],
+  maxSize = 100 
+}: UploadZoneProps) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  const router = useRouter();
 
-  const handleDragLeave = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+  const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+    setError('');
+    
+    if (fileRejections.length > 0) {
+      const rejection = fileRejections[0];
+      const error = rejection.errors[0];
+      
+      if (error.code === 'file-too-large') {
+        setError(`File is too large. Max size is ${maxSize}MB`);
+      } else if (error.code === 'file-invalid-type') {
+         setError('Invalid file type. Please upload a supported image or video.');
+      } else {
+         setError(error.message);
+      }
+      return;
+    }
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      setSelectedFile(file);
+    }
+  }, [maxSize]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: acceptedTypes.reduce((acc, type) => {
+      acc[type] = [];
+      return acc;
+    }, {} as Record<string, string[]>),
+    maxSize: maxSize * 1024 * 1024,
+    multiple: false
+  });
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      console.log('Checking backend health...');
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        await axios.get(`${API_URL}/health`);
+        console.log('Backend is reachable');
+      } catch (healthErr) {
+        console.error('Backend health check failed:', healthErr);
+        throw new Error('Cannot connect to backend server. Please check if it is running.');
+      }
+
+      console.log('Starting upload...');
+      
+      let uploadResult;
+      
+      if (selectedFile.type.startsWith('image/')) {
+        uploadResult = await api.uploadImage(selectedFile);
+      } else if (selectedFile.type.startsWith('video/')) {
+        uploadResult = await api.uploadVideo(selectedFile);
+      } else if (selectedFile.type.startsWith('audio/')) {
+        uploadResult = await api.uploadAudio(selectedFile);
+      } else {
+        throw new Error('Unsupported file type');
+      }
+      console.log('Upload successful!', uploadResult);
+
+      // Start analysis
+      const analysisResult = await api.startAnalysis(uploadResult.id);
+      console.log('Analysis started!', analysisResult);
+
+      // Redirect to results page
+      router.push(`/analysis/${uploadResult.id}`);
+      
+    } catch (error: any) {
+      console.error('=== UPLOAD ERROR ===');
+      console.error('Full error:', error);
+      console.error('Response:', error.response);
+      
+      const errorMessage = error.response?.data?.detail || error.message || 'Upload failed';
+      setError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    setError('');
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4, duration: 0.5 }}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`relative rounded-lg border-2 border-dashed p-10 text-center transition-all duration-300 cursor-pointer group ${
-        isDragging
-          ? "border-primary bg-primary/5 glow-primary"
-          : "border-border hover:border-primary/50 bg-card"
-      }`}
-    >
-      {/* Scan line effect */}
-      <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="absolute inset-x-0 h-px scan-line animate-scan" />
-      </div>
+    <div className="w-full">
+      {!selectedFile ? (
+        <div
+          {...getRootProps()}
+          className={`
+            border-2 border-dashed rounded-xl p-12 text-center cursor-pointer
+            transition-all duration-200
+            ${isDragActive 
+              ? 'border-primary bg-primary/5' 
+              : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+            }
+          `}
+        >
+          <input {...getInputProps()} />
+          <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          
+          {isDragActive ? (
+            <p className="text-lg font-medium text-primary">
+              Drop file here...
+            </p>
+          ) : (
+            <>
+              <p className="text-lg font-medium mb-2">
+                Drag & drop file here
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                or click to browse
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Supported: Images (JPG, PNG) & Videos (MP4, MOV)
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Max size: {maxSize}MB
+              </p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="border-2 border-border rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <File className="w-10 h-10 text-primary" />
+              <div>
+                <p className="font-medium">{selectedFile.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={removeFile}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-      <div className="flex flex-col items-center gap-4">
-        <div className="rounded-full bg-secondary p-4">
-          <Upload className="h-8 w-8 text-primary" />
+          <Button
+            onClick={handleUpload}
+            isLoading={uploading}
+            className="w-full"
+          >
+            {uploading ? 'Uploading...' : 'Start Analysis'}
+          </Button>
         </div>
-        <div>
-          <h3 className="font-display text-lg font-semibold text-foreground mb-1">
-            Upload Media for Analysis
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Drag and drop images or videos to scan for deepfake manipulation,
-            AI-generated content, and forensic anomalies.
-          </p>
-        </div>
-        <div className="flex items-center gap-6 text-xs font-mono text-muted-foreground mt-2">
-          <span className="flex items-center gap-1.5">
-            <FileImage className="h-3.5 w-3.5" /> JPG, PNG, WEBP
-          </span>
-          <span className="flex items-center gap-1.5">
-            <FileVideo className="h-3.5 w-3.5" /> MP4, MOV, AVI
-          </span>
-        </div>
-      </div>
-    </motion.div>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-500 mt-2">{error}</p>
+      )}
+    </div>
   );
 }
