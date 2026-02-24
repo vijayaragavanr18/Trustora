@@ -1,0 +1,23 @@
+# Minimal Requirements for Testing (Install First)
+# Core dependencies for basic functionality
+
+# Blockchain
+web3==6.11.3
+eth-account==0.10.0
+eth-utils==2.3.1
+
+# API
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+aiofiles==23.2.1
+cryptography==41.0.7
+
+# Basic Data Processing
+numpy==1.24.3
+Pillow==10.1.0

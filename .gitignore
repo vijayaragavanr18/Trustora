@@ -31,3 +31,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# backend
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/hf_model_cache/
+backend/hf_audio_cache/
+backend/hf_video_cache/
+backend/uploads/
+backend/*.db
+backend/*.log
+backend/.env

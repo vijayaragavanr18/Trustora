@@ -1,0 +1,8 @@
+{
+    "hardware_latency_ms": 0.03,
+    "sampling_strategy": "high_fidelity",
+    "recommended_video_frames": 15,
+    "ai_model_available": true,
+    "ensemble_calibration": 0.85,
+    "last_trained": "2026-02-24 18:36:22"
+}
